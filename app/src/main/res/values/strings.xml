@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MemoList</string>
+    <string name="mnuAddItemText">Добавить</string>
+</resources>
