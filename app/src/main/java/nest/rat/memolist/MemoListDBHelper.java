@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Paint;
 import android.util.Log;
 
+import java.util.Locale;
+
 import static nest.rat.memolist.MemoListEntryState.MARKED;
 import static nest.rat.memolist.MemoListEntryState.NONE;
 
@@ -206,5 +208,10 @@ class MemoListEntry {
                 STATE = MemoListEntryState.NONE;
                 break;
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format(new Locale("ru"), "object MemoListEntry: _ID %d, NAME: %s, STATE: %s", _ID, NAME, STATE.toString());
     }
 }
