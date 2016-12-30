@@ -71,7 +71,8 @@ public class MainActivity extends Activity {
                 return true;
             case R.id.entryDelMenu:
                 dbHelper.deleteEntry(entry);
-                entryAdapter.remove(entry);
+                entryList.remove(entry);
+                entryAdapter.notifyDataSetChanged();
                 return true;
             default:
                 return super.onContextItemSelected(item);
