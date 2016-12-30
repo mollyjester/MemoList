@@ -3,4 +3,7 @@
     <string name="mnuAddItemText">Добавить</string>
     <string name="entryEditMenuText">Редактировать</string>
     <string name="entryDelMenuText">Удалить</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Отмена</string>
+    <string name="new_entry">Новая запись</string>
 </resources>

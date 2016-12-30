@@ -2,21 +2,17 @@ package nest.rat.memolist;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.ScrollView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements EditEntryDialog.EditEntryDialogListener {
 
     private ListView lvMain;
     private MemoListDBHelper dbHelper;
@@ -47,11 +43,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        MemoListEntry entry = new MemoListEntry(dbHelper);
-        entry.setNAME("Новая запись");
-        entry.save();
-        entryList.add(entry);
-        entryAdapter.notifyDataSetChanged();
+        showEditEntryDialog();
         return super.onOptionsItemSelected(item);
     }
 
@@ -83,5 +75,19 @@ public class MainActivity extends Activity {
     public void onLowMemory() {
         super.onLowMemory();
         dbHelper.close();
+    }
+
+    @Override
+    public void onDialogPositiveClick(String entryText) {
+        MemoListEntry entry = new MemoListEntry(dbHelper);
+        entry.setNAME(entryText);
+        entry.save();
+        entryList.add(entry);
+        entryAdapter.notifyDataSetChanged();
+    }
+
+    private void showEditEntryDialog() {
+        EditEntryDialog dialog = new EditEntryDialog();
+        dialog.show(getFragmentManager(), EditEntryDialog.TAG);
     }
 }
