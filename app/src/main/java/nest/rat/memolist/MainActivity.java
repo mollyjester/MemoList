@@ -14,12 +14,16 @@ import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+import java.util.ArrayList;
+
+public class MainActivity extends Activity {
 
     private ListView lvMain;
     private MemoListDBHelper dbHelper;
-    private static String TAG = "MemoListMain";
     private ArrayAdapter<MemoListEntry> entryAdapter;
+    private ArrayList<MemoListEntry> entryList;
+
+    private static String TAG = "MemoListMain";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,14 +33,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
         lvMain = (ListView) findViewById(R.id.lvMain);
         registerForContextMenu(lvMain);
         dbHelper = new MemoListDBHelper(getApplicationContext());
+        entryList = dbHelper.listEntries();
         entryAdapter = new ArrayAdapter<MemoListEntry>(
-                this, android.R.layout.simple_list_item_1, dbHelper.listEntries());
+                this, android.R.layout.simple_list_item_1, entryList);
         lvMain.setAdapter(entryAdapter);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
     }
 
     @Override
@@ -50,7 +50,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         MemoListEntry entry = new MemoListEntry(dbHelper);
         entry.setNAME("Новая запись");
         entry.save();
-        entryAdapter.add(entry);
+        entryList.add(entry);
+        entryAdapter.notifyDataSetChanged();
         return super.onOptionsItemSelected(item);
     }
 
@@ -63,31 +64,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        //TextViewEx tvEx = (TextViewEx) llMain.getChildAt(info.position);
-
-        Log.d(TAG, item.getMenuInfo().toString());
+        MemoListEntry entry = entryAdapter.getItem(info.position);
 
         switch (item.getItemId()) {
             case R.id.entryEditMenu:
-                Log.d(TAG, "Edit");
                 return true;
             case R.id.entryDelMenu:
-                //dbHelper.deleteEntry(tvEx.getEntry());
-                //buildItemList();
-                Log.d(TAG, "Delete");
+                dbHelper.deleteEntry(entry);
+                entryAdapter.remove(entry);
                 return true;
             default:
                 return super.onContextItemSelected(item);
          }
-    }
-
-    @Override
-    public void onClick(View v) {
-        TextViewEx tvItem = (TextViewEx) v;
-        MemoListEntry entry = tvItem.getEntry();
-        entry.switchState();
-        tvItem.getEntry().save();
-        tvItem.affectState();
     }
 
     @Override

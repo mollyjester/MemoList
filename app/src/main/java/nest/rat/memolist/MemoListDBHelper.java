@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Paint;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 import static nest.rat.memolist.MemoListEntryState.MARKED;
@@ -73,13 +74,13 @@ public class MemoListDBHelper extends SQLiteOpenHelper {
         return ret;
     }
 
-    public MemoListEntry[] listEntries() {
+    public ArrayList<MemoListEntry> listEntries() {
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.query(ITEM_TABLE, ITEM_TABLE_COLUMNS, "", null, "", "", "");
 
         cursor.moveToFirst();
 
-        MemoListEntry[] entryArr = new MemoListEntry[cursor.getCount()];
+        ArrayList<MemoListEntry> entryList = new ArrayList<MemoListEntry>();
         int i = 0;
 
         while (!cursor.isAfterLast()){
@@ -87,16 +88,15 @@ public class MemoListDBHelper extends SQLiteOpenHelper {
             entry.set_ID(cursor.getInt(ITEM_TABLE_COL_ID));
             entry.setNAME(cursor.getString(ITEM_TABLE_COL_ITEMTEXT));
             entry.setSTATE(MemoListEntryState.values()[cursor.getInt(ITEM_TABLE_COL_STATE)]);
-            entryArr[i] = entry;
+            entryList.add(entry);
             cursor.moveToNext();
-
             i++;
         }
 
         cursor.close();
         closeDB(db);
         
-        return entryArr;
+        return entryList;
     }
 
     /**
