@@ -20,9 +20,10 @@ import android.widget.Toast;
 public class EditEntryDialog extends DialogFragment {
     static public final String TAG = "EditEntryDialog";
     private EditText etNewEntryText;
+    private MemoListEntry entry;
 
     public interface EditEntryDialogListener {
-        public void onDialogPositiveClick(String entryText);
+        public void onDialogPositiveClick(MemoListEntry entry, String entryText);
     }
 
     EditEntryDialogListener mListener;
@@ -49,6 +50,9 @@ public class EditEntryDialog extends DialogFragment {
         builder.setView(view);
 
         etNewEntryText = (EditText) view.findViewById(R.id.etNewEntryText);
+        if (entry != null) {
+            etNewEntryText.setText(entry.getNAME());
+        }
 
         this.addOkButton(builder);
         this.addCancelButton(builder);
@@ -67,7 +71,7 @@ public class EditEntryDialog extends DialogFragment {
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                mListener.onDialogPositiveClick(etNewEntryText.getText().toString());
+                mListener.onDialogPositiveClick(entry, etNewEntryText.getText().toString());
             }
         });
     }
@@ -79,5 +83,13 @@ public class EditEntryDialog extends DialogFragment {
                 EditEntryDialog.this.getDialog().cancel();
             }
         });
+    }
+
+    public void setEntry(MemoListEntry _entry) {
+        entry = _entry;
+    }
+
+    public MemoListEntry getEntry() {
+        return entry;
     }
 }

@@ -43,7 +43,7 @@ public class MainActivity extends Activity implements EditEntryDialog.EditEntryD
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        showEditEntryDialog();
+        showEditEntryDialog(null);
         return super.onOptionsItemSelected(item);
     }
 
@@ -60,6 +60,7 @@ public class MainActivity extends Activity implements EditEntryDialog.EditEntryD
 
         switch (item.getItemId()) {
             case R.id.entryEditMenu:
+                showEditEntryDialog(entry);
                 return true;
             case R.id.entryDelMenu:
                 dbHelper.deleteEntry(entry);
@@ -78,16 +79,24 @@ public class MainActivity extends Activity implements EditEntryDialog.EditEntryD
     }
 
     @Override
-    public void onDialogPositiveClick(String entryText) {
-        MemoListEntry entry = new MemoListEntry(dbHelper);
-        entry.setNAME(entryText);
-        entry.save();
-        entryList.add(entry);
+    public void onDialogPositiveClick(MemoListEntry _entry, String entryText) {
+        if (_entry == null) {
+            MemoListEntry entry = new MemoListEntry(dbHelper);
+            entry.setNAME(entryText);
+            entry.save();
+            entryList.add(entry);
+        }
+        else {
+            _entry.setNAME(entryText);
+            _entry.save();
+        }
+
         entryAdapter.notifyDataSetChanged();
     }
 
-    private void showEditEntryDialog() {
+    private void showEditEntryDialog(MemoListEntry entry) {
         EditEntryDialog dialog = new EditEntryDialog();
+        dialog.setEntry(entry);
         dialog.show(getFragmentManager(), EditEntryDialog.TAG);
     }
 }
