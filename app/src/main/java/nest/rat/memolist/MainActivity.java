@@ -13,8 +13,7 @@ import android.widget.ListView;
 import java.util.ArrayList;
 
 public class MainActivity extends ListActivity
-        implements EditEntryDialog.EditEntryDialogListener,
-                    AdapterView.OnItemLongClickListener {
+        implements EditEntryDialog.EditEntryDialogListener {
 
     private MemoListDBHelper dbHelper;
     private ArrayAdapter<MemoListEntry> mAdapter;
@@ -95,10 +94,5 @@ public class MainActivity extends ListActivity
         EditEntryDialog dialog = new EditEntryDialog();
         dialog.setEntry(entry);
         dialog.show(getFragmentManager(), EditEntryDialog.TAG);
-    }
-
-    @Override
-    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-        return true;
     }
 }
