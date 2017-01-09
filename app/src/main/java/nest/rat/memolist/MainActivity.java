@@ -1,6 +1,6 @@
 package nest.rat.memolist;
 
-import android.app.Activity;
+import android.app.ListActivity;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -12,27 +12,24 @@ import android.widget.ListView;
 
 import java.util.ArrayList;
 
-public class MainActivity extends Activity implements EditEntryDialog.EditEntryDialogListener {
+public class MainActivity extends ListActivity
+        implements EditEntryDialog.EditEntryDialogListener,
+                    AdapterView.OnItemLongClickListener {
 
-    private ListView lvMain;
     private MemoListDBHelper dbHelper;
-    private ArrayAdapter<MemoListEntry> entryAdapter;
-    private ArrayList<MemoListEntry> entryList;
-
-    private static String TAG = "MemoListMain";
+    private ArrayAdapter<MemoListEntry> mAdapter;
+    private final static String TAG = "MemoListMain";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
 
-        lvMain = (ListView) findViewById(R.id.lvMain);
-        registerForContextMenu(lvMain);
         dbHelper = new MemoListDBHelper(getApplicationContext());
-        entryList = dbHelper.listEntries();
-        entryAdapter = new ArrayAdapter<MemoListEntry>(
-                this, android.R.layout.simple_list_item_1, entryList);
-        lvMain.setAdapter(entryAdapter);
+        mAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_list_item_1, dbHelper.listEntries());
+        setListAdapter(mAdapter);
+
+        registerForContextMenu(getListView());
     }
 
     @Override
@@ -56,7 +53,7 @@ public class MainActivity extends Activity implements EditEntryDialog.EditEntryD
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        MemoListEntry entry = entryAdapter.getItem(info.position);
+        MemoListEntry entry = mAdapter.getItem(info.position);
 
         switch (item.getItemId()) {
             case R.id.entryEditMenu:
@@ -64,8 +61,8 @@ public class MainActivity extends Activity implements EditEntryDialog.EditEntryD
                 return true;
             case R.id.entryDelMenu:
                 dbHelper.deleteEntry(entry);
-                entryList.remove(entry);
-                entryAdapter.notifyDataSetChanged();
+                mAdapter.remove(entry);
+                mAdapter.notifyDataSetChanged();
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -84,19 +81,24 @@ public class MainActivity extends Activity implements EditEntryDialog.EditEntryD
             MemoListEntry entry = new MemoListEntry(dbHelper);
             entry.setNAME(entryText);
             entry.save();
-            entryList.add(entry);
+            mAdapter.add(entry);
         }
         else {
             _entry.setNAME(entryText);
             _entry.save();
         }
 
-        entryAdapter.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
     }
 
     private void showEditEntryDialog(MemoListEntry entry) {
         EditEntryDialog dialog = new EditEntryDialog();
         dialog.setEntry(entry);
         dialog.show(getFragmentManager(), EditEntryDialog.TAG);
+    }
+
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        return true;
     }
 }

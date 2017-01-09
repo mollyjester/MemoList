@@ -14,7 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 /**
- * Created by slikharev on 30.12.2016.
+ * Created by mollyjester on 30.12.2016.
  */
 
 public class EditEntryDialog extends DialogFragment {
@@ -23,46 +23,28 @@ public class EditEntryDialog extends DialogFragment {
     private MemoListEntry entry;
 
     public interface EditEntryDialogListener {
-        public void onDialogPositiveClick(MemoListEntry entry, String entryText);
+        void onDialogPositiveClick(MemoListEntry entry, String entryText);
     }
 
     EditEntryDialogListener mListener;
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-
-        try {
-            mListener = (EditEntryDialogListener)  context;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString()
-                    + "must implement EditEntryDialogListener");
-        }
-    }
-
-    @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Activity activity = getActivity();
+        mListener = listener(activity);
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-
-        LayoutInflater inflater = getActivity().getLayoutInflater();
+        LayoutInflater inflater = activity.getLayoutInflater();
         View view = inflater.inflate(R.layout.edit_entry_dialog, null);
         builder.setView(view);
 
         etNewEntryText = (EditText) view.findViewById(R.id.etNewEntryText);
+
         if (entry != null) {
             etNewEntryText.setText(entry.getNAME());
         }
 
         this.addOkButton(builder);
         this.addCancelButton(builder);
-
-        try {
-            mListener = (EditEntryDialogListener) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
-                    + "must implement EditEntryDialogListener");
-        }
 
         return builder.create();
     }
@@ -83,6 +65,15 @@ public class EditEntryDialog extends DialogFragment {
                 EditEntryDialog.this.getDialog().cancel();
             }
         });
+    }
+
+    private EditEntryDialogListener listener(Activity activity) {
+        try {
+            return (EditEntryDialogListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString()
+                    + " must implement EditEntryDialogListener");
+        }
     }
 
     public void setEntry(MemoListEntry _entry) {

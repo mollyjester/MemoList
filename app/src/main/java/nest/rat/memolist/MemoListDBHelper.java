@@ -15,7 +15,7 @@ import static nest.rat.memolist.MemoListEntryState.MARKED;
 import static nest.rat.memolist.MemoListEntryState.NONE;
 
 /**
- * Created by SLikharev on 29.12.2016.
+ * Created by mollyjester on 29.12.2016.
  */
 
 public class MemoListDBHelper extends SQLiteOpenHelper {
@@ -57,21 +57,6 @@ public class MemoListDBHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(DROP_TABLE);
         onCreate(db);
-    }
-
-    public int entryCount() {
-        int ret = 0;
-        SQLiteDatabase db = this.getWritableDatabase();
-
-        Cursor cur = db.rawQuery("select count(1) from " + ITEM_TABLE, null);
-
-        if (cur.moveToFirst()) {
-            ret = cur.getInt(0);
-        }
-
-        cur.close();
-        closeDB(db);
-        return ret;
     }
 
     public ArrayList<MemoListEntry> listEntries() {
@@ -212,6 +197,7 @@ class MemoListEntry {
 
     @Override
     public String toString() {
-        return String.format(new Locale("ru"), "object MemoListEntry: _ID %d, NAME: %s, STATE: %s", _ID, NAME, STATE.toString());
+        ///return String.format(new Locale("ru"), "object MemoListEntry: _ID %d, NAME: %s, STATE: %s", _ID, NAME, STATE.toString());
+        return String.format(new Locale("ru"), "%s: %s", NAME, STATE.toString());
     }
 }
