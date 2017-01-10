@@ -40,7 +40,7 @@ public class EditEntryDialog extends DialogFragment {
         void onDialogPositiveClick(long id, String txt);
     }
 
-    EditEntryDialogListener mListener;
+    private EditEntryDialogListener mListener;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {

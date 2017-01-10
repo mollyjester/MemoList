@@ -34,8 +34,7 @@ public class MainActivity extends ListActivity implements
 
         @Override
         public Cursor loadInBackground() {
-            Cursor cursor = db.getAllMemos();
-            return cursor;
+            return db.getAllMemos();
         }
     }
 
