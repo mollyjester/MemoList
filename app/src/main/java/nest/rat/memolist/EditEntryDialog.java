@@ -4,14 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Toast;
 
 /**
  * Created by mollyjester on 30.12.2016.
@@ -20,10 +17,27 @@ import android.widget.Toast;
 public class EditEntryDialog extends DialogFragment {
     static public final String TAG = "EditEntryDialog";
     private EditText etNewEntryText;
-    private MemoListEntry entry;
+    private long itemId;
+    private String itemTxt;
+
+    public long getItemId() {
+        return itemId;
+    }
+
+    public void setItemId(long itemId) {
+        this.itemId = itemId;
+    }
+
+    public String getItemTxt() {
+        return itemTxt;
+    }
+
+    public void setItemTxt(String itemTxt) {
+        this.itemTxt = itemTxt;
+    }
 
     public interface EditEntryDialogListener {
-        void onDialogPositiveClick(MemoListEntry entry, String entryText);
+        void onDialogPositiveClick(long id, String txt);
     }
 
     EditEntryDialogListener mListener;
@@ -39,8 +53,8 @@ public class EditEntryDialog extends DialogFragment {
 
         etNewEntryText = (EditText) view.findViewById(R.id.etNewEntryText);
 
-        if (entry != null) {
-            etNewEntryText.setText(entry.getNAME());
+        if (itemTxt.length() != 0) {
+            etNewEntryText.setText(itemTxt);
         }
 
         this.addOkButton(builder);
@@ -53,7 +67,7 @@ public class EditEntryDialog extends DialogFragment {
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                mListener.onDialogPositiveClick(entry, etNewEntryText.getText().toString());
+                mListener.onDialogPositiveClick(itemId, etNewEntryText.getText().toString());
             }
         });
     }
@@ -74,13 +88,5 @@ public class EditEntryDialog extends DialogFragment {
             throw new ClassCastException(activity.toString()
                     + " must implement EditEntryDialogListener");
         }
-    }
-
-    public void setEntry(MemoListEntry _entry) {
-        entry = _entry;
-    }
-
-    public MemoListEntry getEntry() {
-        return entry;
     }
 }

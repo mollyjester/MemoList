@@ -1,34 +1,59 @@
 package nest.rat.memolist;
 
 import android.app.ListActivity;
+import android.app.LoaderManager;
+import android.content.Context;
+import android.content.CursorLoader;
+import android.content.Loader;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 
-import java.util.ArrayList;
 
-public class MainActivity extends ListActivity
-        implements EditEntryDialog.EditEntryDialogListener {
+public class MainActivity extends ListActivity implements
+        EditEntryDialog.EditEntryDialogListener,
+        LoaderManager.LoaderCallbacks<Cursor> {
 
-    private MemoListDBHelper dbHelper;
-    private ArrayAdapter<MemoListEntry> mAdapter;
+    private DB db;
+    private SimpleCursorAdapter mAdapter;
     private final static String TAG = "MemoListMain";
+
+    static class MemoCursorLoader extends CursorLoader {
+
+        DB db;
+
+        public MemoCursorLoader(Context context, DB db) {
+            super(context);
+            this.db = db;
+        }
+
+        @Override
+        public Cursor loadInBackground() {
+            Cursor cursor = db.getAllMemos();
+            return cursor;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        dbHelper = new MemoListDBHelper(getApplicationContext());
-        mAdapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_list_item_1, dbHelper.listEntries());
+        db = new DB(this);
+        db.open();
+
+        String[] from = new String[] {DB.MEMO_TABLE_COL_NAME_NAME};
+        int[] to = new int[] {android.R.id.text1};
+
+        mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, from, to, 0);
         setListAdapter(mAdapter);
 
         registerForContextMenu(getListView());
+        getLoaderManager().initLoader(0, null, this);
     }
 
     @Override
@@ -39,7 +64,7 @@ public class MainActivity extends ListActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        showEditEntryDialog(null);
+        showEditEntryDialog();
         return super.onOptionsItemSelected(item);
     }
 
@@ -52,16 +77,15 @@ public class MainActivity extends ListActivity
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        MemoListEntry entry = mAdapter.getItem(info.position);
 
         switch (item.getItemId()) {
             case R.id.entryEditMenu:
-                showEditEntryDialog(entry);
+                Cursor cursor = mAdapter.getCursor();
+                showEditEntryDialog(info.id, cursor.getString(cursor.getColumnIndex(DB.MEMO_TABLE_COL_NAME_NAME)));
                 return true;
             case R.id.entryDelMenu:
-                dbHelper.deleteEntry(entry);
-                mAdapter.remove(entry);
-                mAdapter.notifyDataSetChanged();
+                db.deleteMemo(info.id);
+                getLoaderManager().getLoader(0).forceLoad();
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -69,30 +93,47 @@ public class MainActivity extends ListActivity
     }
 
     @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        dbHelper.close();
+    public void onDialogPositiveClick(long id, String txt) {
+        String[] columns = {DB.MEMO_TABLE_COL_NAME_NAME};
+        String[] values = {txt};
+
+        if (id == 0) {
+            db.addMemo(txt);
+        } else {
+            db.updateMemo(id, columns, values);
+        }
+
+        getLoaderManager().getLoader(0).forceLoad();
+    }
+
+    private void showEditEntryDialog(long id, String txt) {
+        EditEntryDialog dialog = new EditEntryDialog();
+        dialog.setItemId(id);
+        dialog.setItemTxt(txt);
+        dialog.show(getFragmentManager(), EditEntryDialog.TAG);
+    }
+
+    private void showEditEntryDialog() {
+        showEditEntryDialog(0, "");
     }
 
     @Override
-    public void onDialogPositiveClick(MemoListEntry _entry, String entryText) {
-        if (_entry == null) {
-            MemoListEntry entry = new MemoListEntry(dbHelper);
-            entry.setNAME(entryText);
-            entry.save();
-            mAdapter.add(entry);
-        }
-        else {
-            _entry.setNAME(entryText);
-            _entry.save();
-        }
-
-        mAdapter.notifyDataSetChanged();
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return new MemoCursorLoader(this, db);
     }
 
-    private void showEditEntryDialog(MemoListEntry entry) {
-        EditEntryDialog dialog = new EditEntryDialog();
-        dialog.setEntry(entry);
-        dialog.show(getFragmentManager(), EditEntryDialog.TAG);
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
+    protected void onDestroy() {
+        super.onDestroy();
+        db.close();
     }
 }
