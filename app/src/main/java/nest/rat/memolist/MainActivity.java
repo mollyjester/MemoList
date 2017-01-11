@@ -20,7 +20,7 @@ public class MainActivity extends ListActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
     private DB db;
-    private SimpleCursorAdapter mAdapter;
+    private MemoCursorAdapter mAdapter;
     private final static String TAG = "MemoListMain";
 
     static class MemoCursorLoader extends CursorLoader {
@@ -45,10 +45,7 @@ public class MainActivity extends ListActivity implements
         db = new DB(this);
         db.open();
 
-        String[] from = new String[] {DB.MEMO_TABLE_COL_NAME_NAME};
-        int[] to = new int[] {android.R.id.text1};
-
-        mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, from, to, 0);
+        mAdapter = new MemoCursorAdapter(this, null, 0);
         setListAdapter(mAdapter);
 
         registerForContextMenu(getListView());
