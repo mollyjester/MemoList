@@ -24,6 +24,22 @@ public class DB {
     final static String DROP_MEMO_TABLE = "DROP TABLE IF EXISTS " + MEMO_TABLE;
     final static String TAG = "DB";
 
+    static class MemoState {
+        final static int MEMO_STATE_NONE = 0;
+        final static int MEMO_STATE_CHECKED = 1;
+
+        public static int switchState(int state) {
+            switch (state) {
+                case MEMO_STATE_NONE:
+                    return MEMO_STATE_CHECKED;
+                case MEMO_STATE_CHECKED:
+                    return MEMO_STATE_NONE;
+            }
+
+            return MEMO_STATE_NONE;
+        }
+    }
+
     private Context mCtx;
     private DBHelper mDBHelper;
     private SQLiteDatabase mDB;
@@ -68,6 +84,13 @@ public class DB {
             }
             mDB.update(MEMO_TABLE, cv, MEMO_TABLE_COL_ID_NAME + " = " + id, null);
         }
+    }
+
+    public void switchMemoState(long id, Cursor cursor) {
+        String[] columns = {MEMO_TABLE_COL_STATE_NAME};
+        String[] values = {Integer.toString(MemoState.switchState(
+                cursor.getInt(cursor.getColumnIndexOrThrow(MEMO_TABLE_COL_STATE_NAME))))};
+        updateMemo(id, columns, values);
     }
 
     private class DBHelper extends SQLiteOpenHelper {

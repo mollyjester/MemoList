@@ -2,6 +2,7 @@ package nest.rat.memolist;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,8 +30,19 @@ public class MemoCursorAdapter extends CursorAdapter {
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
         TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+
         String title = cursor.getString(cursor.getColumnIndexOrThrow(DB.MEMO_TABLE_COL_NAME_NAME));
-        //text1.setPaintFlags(text1.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         text1.setText(title);
+
+        int state = cursor.getInt(cursor.getColumnIndexOrThrow(DB.MEMO_TABLE_COL_STATE_NAME));
+
+        switch (state) {
+            case DB.MemoState.MEMO_STATE_NONE:
+                text1.setPaintFlags(text1.getPaintFlags() & (~ Paint.STRIKE_THRU_TEXT_FLAG));
+                break;
+            case DB.MemoState.MEMO_STATE_CHECKED:
+                text1.setPaintFlags(text1.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                break;
+        }
     }
 }

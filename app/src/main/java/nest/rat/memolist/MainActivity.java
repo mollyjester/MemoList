@@ -1,27 +1,34 @@
 package nest.rat.memolist;
 
+import android.app.Activity;
 import android.app.ListActivity;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.SimpleCursorAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
 
+import java.io.File;
 
 public class MainActivity extends ListActivity implements
         EditEntryDialog.EditEntryDialogListener,
-        LoaderManager.LoaderCallbacks<Cursor> {
+        LoaderManager.LoaderCallbacks<Cursor>,
+        AdapterView.OnItemClickListener {
 
     private DB db;
     private MemoCursorAdapter mAdapter;
     private final static String TAG = "MemoListMain";
+    private MemoListShare mMemoListShare;
 
     static class MemoCursorLoader extends CursorLoader {
 
@@ -48,8 +55,12 @@ public class MainActivity extends ListActivity implements
         mAdapter = new MemoCursorAdapter(this, null, 0);
         setListAdapter(mAdapter);
 
-        registerForContextMenu(getListView());
+        ListView lvMain = getListView();
+        lvMain.setOnItemClickListener(this);
+        registerForContextMenu(lvMain);
         getLoaderManager().initLoader(0, null, this);
+
+        mMemoListShare = new MemoListShare(this);
     }
 
     @Override
@@ -60,7 +71,15 @@ public class MainActivity extends ListActivity implements
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        showEditEntryDialog();
+        switch (item.getItemId()) {
+            case R.id.mnuAddItem:
+                showEditEntryDialog();
+                break;
+            case R.id.mnuUploadItem:
+                mMemoListShare.pickFile();
+                break;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -77,7 +96,7 @@ public class MainActivity extends ListActivity implements
         switch (item.getItemId()) {
             case R.id.entryEditMenu:
                 Cursor cursor = mAdapter.getCursor();
-                showEditEntryDialog(info.id, cursor.getString(cursor.getColumnIndex(DB.MEMO_TABLE_COL_NAME_NAME)));
+                showEditEntryDialog(info.id, cursor.getString(cursor.getColumnIndexOrThrow(DB.MEMO_TABLE_COL_NAME_NAME)));
                 return true;
             case R.id.entryDelMenu:
                 db.deleteMemo(info.id);
@@ -86,6 +105,27 @@ public class MainActivity extends ListActivity implements
             default:
                 return super.onContextItemSelected(item);
          }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case MemoListShare.REQUEST_CODE_GET_FILE:
+                if (resultCode == Activity.RESULT_OK) {
+                    Uri uri = data.getData();
+                    String path = mMemoListShare.getPath(this, uri);
+                    Toast.makeText(this, path, Toast.LENGTH_SHORT).show();
+                    mMemoListShare.setFile(new File(path));
+                    mMemoListShare.connect();
+                }
+                break;
+            case MemoListShare.REQUEST_CODE_CREATOR:
+                if (resultCode == RESULT_OK) {
+                    mMemoListShare.setFile(null);
+                    mMemoListShare.disconnect();
+                }
+                break;
+        }
     }
 
     @Override
@@ -126,6 +166,12 @@ public class MainActivity extends ListActivity implements
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
 
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        db.switchMemoState(id, mAdapter.getCursor());
+        getLoaderManager().getLoader(0).forceLoad();
     }
 
     protected void onDestroy() {

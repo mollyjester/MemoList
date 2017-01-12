@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">MemoList</string>
     <string name="mnuAddItemText">Добавить</string>
+    <string name="mnuUploadItem">Синхронизировать</string>
     <string name="entryEditMenuText">Редактировать</string>
     <string name="entryDelMenuText">Удалить</string>
     <string name="ok">OK</string>
