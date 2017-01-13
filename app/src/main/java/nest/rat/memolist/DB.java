@@ -93,6 +93,28 @@ public class DB {
         updateMemo(id, columns, values);
     }
 
+    public String getMemoListXml() {
+        String result = "";
+        Cursor listCursor = getAllMemos();
+        listCursor.moveToFirst();
+
+        while (!listCursor.isAfterLast()) {
+            if (result != ""){
+                result += "#";
+            }
+
+            result += listCursor.getString(listCursor.getColumnIndexOrThrow(MEMO_TABLE_COL_NAME_NAME));
+            result += " ";
+            result += listCursor.getString(listCursor.getColumnIndexOrThrow(MEMO_TABLE_COL_STATE_NAME));
+
+            listCursor.moveToNext();
+        }
+
+        listCursor.close();
+
+        return  result;
+    }
+
     private class DBHelper extends SQLiteOpenHelper {
         public DBHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
             super(context, name, factory, version);

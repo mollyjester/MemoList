@@ -76,7 +76,9 @@ public class MainActivity extends ListActivity implements
                 showEditEntryDialog();
                 break;
             case R.id.mnuUploadItem:
-                mMemoListShare.pickFile();
+                mMemoListShare.setListData(db.getMemoListXml());
+                mMemoListShare.connect();
+                Toast.makeText(this, "mnuUploadItem", Toast.LENGTH_SHORT).show();
                 break;
         }
 
@@ -110,19 +112,9 @@ public class MainActivity extends ListActivity implements
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case MemoListShare.REQUEST_CODE_GET_FILE:
-                if (resultCode == Activity.RESULT_OK) {
-                    Uri uri = data.getData();
-                    String path = mMemoListShare.getPath(this, uri);
-                    Toast.makeText(this, path, Toast.LENGTH_SHORT).show();
-                    mMemoListShare.setFile(new File(path));
-                    mMemoListShare.connect();
-                }
-                break;
-            case MemoListShare.REQUEST_CODE_CREATOR:
+            case MemoListShare.REQUEST_CODE_RESOLUTION:
                 if (resultCode == RESULT_OK) {
-                    mMemoListShare.setFile(null);
-                    mMemoListShare.disconnect();
+                    mMemoListShare.connect();
                 }
                 break;
         }

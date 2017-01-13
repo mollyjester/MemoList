@@ -11,23 +11,24 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
-
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
 import com.google.android.gms.drive.DriveApi;
+import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.MetadataChangeSet;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 
 /**
  * Created by mollyjester on 13.01.2017.
@@ -36,24 +37,83 @@ import java.net.URISyntaxException;
 public class MemoListShare implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
     private static final String TAG = "MemoListShare";
-    public static final int REQUEST_CODE_GET_FILE = 1;
-    public static final int REQUEST_CODE_CREATOR = 2;
-    private static final int REQUEST_CODE_RESOLUTION = 3;
+    public static final int REQUEST_CODE_RESOLUTION = 3;
 
     private Activity mActivity;
     private GoogleApiClient mGoogleApiClient;
-    private File mFile;
+    private String listData;
 
     public MemoListShare(@NonNull Activity activity) {
         super();
         mActivity = activity;
+        mGoogleApiClient = new GoogleApiClient.Builder(mActivity)
+                .addApi(Drive.API)
+                .addScope(Drive.SCOPE_FILE)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Toast.makeText(mActivity, "OnConnected", Toast.LENGTH_SHORT).show();
-        saveFileToDrive();
+        Drive.DriveApi.newDriveContents(mGoogleApiClient)
+                .setResultCallback(driveContentsCallback);
     }
+
+    final private ResultCallback<DriveApi.DriveContentsResult> driveContentsCallback = new
+            ResultCallback<DriveApi.DriveContentsResult>() {
+                @Override
+                public void onResult(DriveApi.DriveContentsResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        Toast.makeText(mActivity, "Error while trying to create new file contents", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    final DriveContents driveContents = result.getDriveContents();
+
+                    // Perform I/O off the UI thread.
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            // write content to DriveContents
+                            OutputStream outputStream = driveContents.getOutputStream();
+                            Writer writer = new OutputStreamWriter(outputStream);
+                            try {
+                                writer.write(listData);
+                                writer.close();
+                            } catch (IOException e) {
+                                Log.e(TAG, e.getMessage());
+                            }
+
+                            MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                    .setTitle("MemoList")
+                                    .setMimeType("text/plain")
+                                    .setStarred(true).build();
+
+                            // create a file on root folder
+                            Drive.DriveApi
+                                    .getRootFolder(mGoogleApiClient)
+                                    .createFile(mGoogleApiClient, changeSet, driveContents)
+                                    .setResultCallback(fileCallback);
+
+                            disconnect();
+                        }
+                    }.start();
+                }
+            };
+
+    final private ResultCallback<DriveFolder.DriveFileResult> fileCallback = new
+            ResultCallback<DriveFolder.DriveFileResult>() {
+                @Override
+                public void onResult(DriveFolder.DriveFileResult result) {
+                    if (!result.getStatus().isSuccess()) {
+                        Toast.makeText(mActivity, "Error while trying to create the file", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Toast.makeText(mActivity, "Created a file with content: " + result.getDriveFile().getDriveId(), Toast.LENGTH_SHORT).show();
+                }
+            };
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -61,39 +121,22 @@ public class MemoListShare implements GoogleApiClient.ConnectionCallbacks,
     }
 
     @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        if (!connectionResult.hasResolution()) {
-            GoogleApiAvailability.getInstance().getErrorDialog(mActivity, connectionResult.getErrorCode(), 0).show();
+    public void onConnectionFailed(ConnectionResult result) {
+        Log.i(TAG, "GoogleApiClient connection failed: " + result.toString());
+        if (!result.hasResolution()) {
+            // show the localized error dialog.
+            GoogleApiAvailability.getInstance().getErrorDialog(mActivity, result.getErrorCode(), 0).show();
             return;
         }
-
         try {
-            connectionResult.startResolutionForResult(mActivity, REQUEST_CODE_RESOLUTION);
+            result.startResolutionForResult(mActivity, REQUEST_CODE_RESOLUTION);
         } catch (IntentSender.SendIntentException e) {
             Log.e(TAG, "Exception while starting resolution activity", e);
         }
     }
 
-    public void pickFile() {
-        // TODO: build an output file and save it
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        mActivity.startActivityForResult(intent, REQUEST_CODE_GET_FILE);
-    }
-
     public void connect() {
-        if (mGoogleApiClient == null) {
-            GoogleApiClient.Builder builder = new GoogleApiClient.Builder(mActivity);
-            builder.addApi(Drive.API);
-            builder.addScope(Drive.SCOPE_FILE);
-            builder.addConnectionCallbacks(this);
-            builder.addOnConnectionFailedListener(this);
-            mGoogleApiClient = builder.build();
-        }
-
         mGoogleApiClient.connect();
-        Toast.makeText(mActivity, "Connected", Toast.LENGTH_SHORT).show();
     }
 
     public void disconnect() {
@@ -102,78 +145,7 @@ public class MemoListShare implements GoogleApiClient.ConnectionCallbacks,
         }
     }
 
-    private void saveFileToDrive() {
-        Drive.DriveApi.newDriveContents(mGoogleApiClient)
-                .setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
-
-                    @Override
-                    public void onResult(DriveApi.DriveContentsResult result) {
-                        if (!result.getStatus().isSuccess()) {
-                            return;
-                        }
-
-                        OutputStream outputStream = result.getDriveContents().getOutputStream();
-                        FileInputStream fileStream;
-
-                        try {
-                            fileStream = new FileInputStream(mFile);
-                        } catch (FileNotFoundException e) {
-                            Log.e(TAG, "FileNotFound");
-                            return;
-                        }
-
-                        Toast.makeText(mActivity, "Start sending file", Toast.LENGTH_SHORT).show();
-                        try {
-                            byte[] buffer = new byte[1024];
-                            int n;
-
-                            while ((n = fileStream.read(buffer)) != -1) {
-                                outputStream.write(buffer, 0, n);
-                            }
-                        } catch (IOException e1) {
-                            Log.i(TAG, "Unable to write file contents.");
-                        }
-
-                        IntentSender intentSender = Drive.DriveApi
-                                .newCreateFileActivityBuilder()
-                                .setInitialDriveContents(result.getDriveContents())
-                                .build(mGoogleApiClient);
-                        try {
-                            Toast.makeText(mActivity, "Starting sending intent", Toast.LENGTH_SHORT).show();
-                            mActivity.startIntentSenderForResult(
-                                    intentSender, REQUEST_CODE_CREATOR, null, 0, 0, 0);
-                        } catch (IntentSender.SendIntentException e) {
-                            Log.i(TAG, "Failed to launch file chooser.");
-                        }
-                    }
-                });
-
-        disconnect();
-    }
-
-    public void setFile(File mFile) {
-        this.mFile = mFile;
-    }
-
-    public static String getPath(Context context, Uri uri) {
-        if ("content".equalsIgnoreCase(uri.getScheme())) {
-            String[] projection = { "_data" };
-            Cursor cursor;
-
-            try {
-                cursor = context.getContentResolver().query(uri, projection, null, null, null);
-                int column_index = cursor.getColumnIndexOrThrow("_data");
-                if (cursor.moveToFirst()) {
-                    return cursor.getString(column_index);
-                }
-            } catch (Exception e) {
-                // Eat it
-            }
-        }
-        else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return uri.getPath();
-        }
-
-        return null;
+    public void setListData(String listData) {
+        this.listData = listData;
     }
 }
